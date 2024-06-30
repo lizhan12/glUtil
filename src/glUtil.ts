@@ -4,12 +4,11 @@ function isPowerOf2(n: number) {
 export class glUtil {
   /**
    * 判断是否webgl2
-   * @param gl 
-   * @returns 
+   * @param gl
+   * @returns
    */
-  static isWebgl2( gl: WebGLRenderingContext){
+  static isWebgl2(gl: WebGLRenderingContext) {
     return gl instanceof WebGL2RenderingContext;
-  
   }
   /**
    * 创建顶点着色器
@@ -17,10 +16,7 @@ export class glUtil {
    * @param vertexShaderSource 顶点着色器
    * @returns boolen
    */
-  static createVertex(
-    gl: WebGLRenderingContext,
-    vertexShaderSource: string
-  ) {
+  static createVertex(gl: WebGLRenderingContext, vertexShaderSource: string) {
     const shader = gl.createShader(gl.VERTEX_SHADER);
     if (shader) {
       gl.shaderSource(shader, vertexShaderSource);
@@ -28,6 +24,39 @@ export class glUtil {
       return shader;
     }
     throw new Error("create vertexshader fail.");
+  }
+  /**
+   * 获得所有激活的纹理单元
+   * @param gl
+   * @returns number[]
+   */
+  static getTextures(gl: WebGLRenderingContext) {
+    const maxTextureUnits = gl.getParameter(
+      gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS
+    );
+
+    // 检查每个纹理单元的绑定状态
+    let activeTextureUnits = 0;
+    const arr = [];
+    for (let i = 0; i < maxTextureUnits; i++) {
+      gl.activeTexture(gl.TEXTURE0 + i);
+      const textureBinding = gl.getParameter(gl.TEXTURE_BINDING_2D);
+      if (textureBinding) {
+        arr.push(i);
+      }
+    }
+    return arr;
+  }
+  /**
+   * 删除所有已经绑定的纹理单元
+   * @param gl
+   */
+  static delActiveTextures(gl: WebGLRenderingContext) {
+    const nums = glUtil.getTextures(gl);
+    nums.forEach((num) => {
+      gl.activeTexture(gl.TEXTURE0 + num);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    });
   }
 
   /**
@@ -76,28 +105,23 @@ export class glUtil {
   }
   /**
    * 创建program，uniform,attribute信息
-   * @param gl 
-   * @param v 
-   * @param f 
-   * @returns 
+   * @param gl
+   * @param v
+   * @param f
+   * @returns
    */
-  static creatProgramInfo(
-    gl: WebGLRenderingContext,
-    v:string,
-    f:string
-  ){
-    const vShader = glUtil.compileShader(gl,v,gl.VERTEX_SHADER);
+  static creatProgramInfo(gl: WebGLRenderingContext, v: string, f: string) {
+    const vShader = glUtil.compileShader(gl, v, gl.VERTEX_SHADER);
     const fShader = glUtil.compileShader(gl, f, gl.FRAGMENT_SHADER);
-    if(!vShader || !fShader) throw new Error("vShader or fShader is fail");
+    if (!vShader || !fShader) throw new Error("vShader or fShader is fail");
     const program = glUtil.createProgram(gl, vShader, fShader);
     const uniforms = glUtil.getUniforms(gl, program);
     const attributes = glUtil.getAttributes(gl, program);
     return {
       program,
       uniforms,
-      attributes
-    }
-
+      attributes,
+    };
   }
 
   /**
@@ -124,50 +148,44 @@ export class glUtil {
   static bindFramebuffer(
     gl: WebGLRenderingContext,
     framebuffer: WebGLFramebuffer | null,
-    texture: WebGLTexture | null
+    texture: WebGLTexture | null,
+    indx = 0
   ) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     if (texture) {
- 
       gl.framebufferTexture2D(
         gl.FRAMEBUFFER,
         gl.COLOR_ATTACHMENT0,
         gl.TEXTURE_2D,
         texture,
-        0
+        indx
       );
       if (framebuffer) framebuffer.texture = texture;
     }
   }
-    /**
+  /**
    * 创建缓冲区对象
    * @param gl WebGLRenderingContext
    * @param arr Array | Float32Array
    * @returns boolen
    */
-    static createBuffer(
-      gl: WebGLRenderingContext,
-      arr: Array<number> | Float32Array | Uint16Array,
-      target = gl.ARRAY_BUFFER
-    ) {
-      const buffer = gl.createBuffer();
-      if (buffer) {
-        gl.bindBuffer(target, buffer);
-        if (Array.isArray(arr)) {
-          gl.bufferData(
-            target,
-            new Float32Array(arr),
-            gl.STATIC_DRAW
-          );
-        } else {
-          gl.bufferData(target, arr, gl.STATIC_DRAW);
-        }
-        return buffer;
+  static createBuffer(
+    gl: WebGLRenderingContext,
+    arr: Array<number> | Float32Array | Uint16Array,
+    target = gl.ARRAY_BUFFER
+  ) {
+    const buffer = gl.createBuffer();
+    if (buffer) {
+      gl.bindBuffer(target, buffer);
+      if (Array.isArray(arr)) {
+        gl.bufferData(target, new Float32Array(arr), gl.STATIC_DRAW);
+      } else {
+        gl.bufferData(target, arr, gl.STATIC_DRAW);
       }
-      throw new Error("create buffer fail.");
+      return buffer;
     }
-
-
+    throw new Error("create buffer fail.");
+  }
 
   /**
    * 创建缓冲区对象
@@ -185,11 +203,7 @@ export class glUtil {
     if (buffer) {
       gl.bindBuffer(target, buffer);
       if (Array.isArray(arr)) {
-        gl.bufferData(
-          target,
-          new Float32Array(arr),
-          gl.STATIC_DRAW
-        );
+        gl.bufferData(target, new Float32Array(arr), gl.STATIC_DRAW);
       } else {
         gl.bufferData(target, arr, gl.STATIC_DRAW);
       }
@@ -214,11 +228,7 @@ export class glUtil {
     if (buffer) {
       gl.bindBuffer(target, buffer);
       if (Array.isArray(arr)) {
-        gl.bufferData(
-          target,
-          new Uint16Array(arr),
-          gl.STATIC_DRAW
-        );
+        gl.bufferData(target, new Uint16Array(arr), gl.STATIC_DRAW);
       } else {
         gl.bufferData(target, arr, gl.STATIC_DRAW);
       }
@@ -227,33 +237,29 @@ export class glUtil {
     throw new Error("create buffer fail.");
   }
 
-    /**
+  /**
    * 创建索引缓冲区对象
    * @param gl WebGLRenderingContext
    * @param arr Array | Float32Array
    * @returns boolen
    */
-    static createIndexBuffer(
-      gl: WebGLRenderingContext,
-      arr: Array<number> | Float32Array,
-      target = gl.ELEMENT_ARRAY_BUFFER
-    ) {
-      const buffer = gl.createBuffer();
-      if (buffer) {
-        gl.bindBuffer(target, buffer);
-        if (Array.isArray(arr)) {
-          gl.bufferData(
-            target,
-            new Uint16Array(arr),
-            gl.STATIC_DRAW
-          );
-        } else {
-          gl.bufferData(target, arr, gl.STATIC_DRAW);
-        }
-        return buffer;
+  static createIndexBuffer(
+    gl: WebGLRenderingContext,
+    arr: Array<number> | Float32Array,
+    target = gl.ELEMENT_ARRAY_BUFFER
+  ) {
+    const buffer = gl.createBuffer();
+    if (buffer) {
+      gl.bindBuffer(target, buffer);
+      if (Array.isArray(arr)) {
+        gl.bufferData(target, new Uint16Array(arr), gl.STATIC_DRAW);
+      } else {
+        gl.bufferData(target, arr, gl.STATIC_DRAW);
       }
-      throw new Error("create buffer fail.");
+      return buffer;
     }
+    throw new Error("create buffer fail.");
+  }
   /**
    * 顶点着色器中的顶点属性关联到缓冲区对象中的顶点数据
    * @param gl WebGLRenderingContext
@@ -269,19 +275,9 @@ export class glUtil {
     target: any = gl.ARRAY_BUFFER
   ): void {
     // gl.bindBuffer(target, buffer)
-    const attributeLocation = gl.getAttribLocation(
-      program,
-      type
-    );
+    const attributeLocation = gl.getAttribLocation(program, type);
     if (buffer) gl.bindBuffer(target, buffer);
-    gl.vertexAttribPointer(
-      attributeLocation,
-      num,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    );
+    gl.vertexAttribPointer(attributeLocation, num, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(attributeLocation);
     // gl.drawArrays(mode, offset, count);
   }
@@ -291,25 +287,13 @@ export class glUtil {
    * @param program
    * @returns
    */
-  static getUniforms(
-    gl: WebGLRenderingContext,
-    program: WebGLProgram
-  ) {
-    const uniformNames = gl.getProgramParameter(
-      program,
-      gl.ACTIVE_UNIFORMS
-    );
+  static getUniforms(gl: WebGLRenderingContext, program: WebGLProgram) {
+    const uniformNames = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
     const uniforms: any = {};
     for (let i = 0; i < uniformNames; i++) {
-      const uniformName = gl.getActiveUniform(
-        program,
-        i
-      )?.name;
+      const uniformName = gl.getActiveUniform(program, i)?.name;
       if (uniformName)
-        uniforms[uniformName] = gl.getUniformLocation(
-          program,
-          uniformName
-        );
+        uniforms[uniformName] = gl.getUniformLocation(program, uniformName);
     }
     return uniforms;
   }
@@ -319,20 +303,14 @@ export class glUtil {
    * @param program
    * @returns
    */
-  static getAttributes(
-    gl: WebGLRenderingContext,
-    program: WebGLProgram
-  ) {
+  static getAttributes(gl: WebGLRenderingContext, program: WebGLProgram) {
     const attributeNames = gl.getProgramParameter(
       program,
       gl.ACTIVE_ATTRIBUTES
     );
     const attributes: any = {};
     for (let i = 0; i < attributeNames; i++) {
-      const attributeName = gl.getActiveAttrib(
-        program,
-        i
-      )?.name;
+      const attributeName = gl.getActiveAttrib(program, i)?.name;
       if (attributeName)
         attributes[attributeName] = gl.getAttribLocation(
           program,
@@ -370,30 +348,20 @@ export class glUtil {
     let i = 0;
     Object.entries(obj).forEach(([key, value]) => {
       let val = value as unknown as any;
-      const uniformLocation = glUtil.getUniform(
-        gl,
-        program,
-        key
-      );
+      const uniformLocation = glUtil.getUniform(gl, program, key);
       if (val instanceof WebGLTexture) {
         glUtil.setTexture(gl, val, uniformLocation, i++);
-      } else if (
-        Array.isArray(val) ||
-        ArrayBuffer.isView(val)
-      ) {
+      } else if (Array.isArray(val) || ArrayBuffer.isView(val)) {
         val = val as number[];
-        if (val.length == 4)
-          gl.uniform4fv(uniformLocation, val);
-        else if (val.length == 3)
-          gl.uniform3fv(uniformLocation, val);
-        else if (val.length == 2)
-          gl.uniform2fv(uniformLocation, val);
+        if (val.length == 4) gl.uniform4fv(uniformLocation, val);
+        else if (val.length == 3) gl.uniform3fv(uniformLocation, val);
+        else if (val.length == 2) gl.uniform2fv(uniformLocation, val);
         else if (val.length == 9)
           gl.uniformMatrix3fv(uniformLocation, false, val);
         else if (val.length == 16)
           gl.uniformMatrix4fv(uniformLocation, false, val);
         else {
-          gl.uniform1fv(uniformLocation, val)
+          gl.uniform1fv(uniformLocation, val);
         }
       } else {
         gl.uniform1f(uniformLocation, val);
@@ -439,18 +407,18 @@ export class glUtil {
    */
 
   static createTexture(
-    gl: WebGLRenderingContext,
+    gl: WebGL2RenderingContext,
     img: any = null,
     t = [1, 1, 0],
     data: any = null
   ) {
-    const floatTextureExtension = gl.getExtension(
-      "OES_texture_float"
-    );
-    if (!floatTextureExtension) {
-      console.error("Float textures not supported.");
-      // return;
-    }
+    // const floatTextureExtension = gl.getExtension(
+    //   "OES_texture_float"
+    // );
+    // if (!floatTextureExtension) {
+    //   console.error("Float textures not supported.");
+    //   // return;
+    // }
     // const texture = gl.createTexture();
     // gl.activeTexture(gl.TEXTURE0);
     // gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -461,6 +429,7 @@ export class glUtil {
     // gl.bindTexture(gl.TEXTURE_2D, null);
     // 创建纹理对象
     const texture = gl.createTexture();
+    // if(!texture)
     // console.log(data)
 
     // 设置预处理函数，由于图片坐标系和WebGL坐标的Y轴是反的，这个设置可以将图片Y坐标翻转一下
@@ -474,18 +443,8 @@ export class glUtil {
 
     // 指定纹理图像
     if (img)
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        img
-      );
-    else if (
-      data instanceof Uint8Array ||
-      data instanceof Uint16Array
-    ) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    else if (data instanceof Uint8Array || data instanceof Uint16Array) {
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
@@ -502,13 +461,37 @@ export class glUtil {
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
-        gl.RGBA,
+        gl.RGBA32F,
         t[0],
         t[1],
         t[2],
         gl.RGBA,
         gl.FLOAT,
         data
+      );
+    } else if (data === null) {
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA32F,
+        t[0],
+        t[1],
+        t[2],
+        gl.RGBA,
+        gl.FLOAT,
+        null
+      );
+    } else if (data === 0) {
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        t[0],
+        t[1],
+        t[2],
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        null
       );
     } else {
       gl.texImage2D(
@@ -524,34 +507,14 @@ export class glUtil {
       );
     }
 
-    if (
-      img &&
-      isPowerOf2(img.width) &&
-      isPowerOf2(img.height)
-    ) {
+    if (img && isPowerOf2(img.width) && isPowerOf2(img.height)) {
       // console.log(222)
       gl.generateMipmap(gl.TEXTURE_2D);
     } else {
-      gl.texParameteri(
-        gl.TEXTURE_2D,
-        gl.TEXTURE_MIN_FILTER,
-        gl.NEAREST
-      );
-      gl.texParameteri(
-        gl.TEXTURE_2D,
-        gl.TEXTURE_MAG_FILTER,
-        gl.NEAREST
-      );
-      gl.texParameteri(
-        gl.TEXTURE_2D,
-        gl.TEXTURE_WRAP_S,
-        gl.CLAMP_TO_EDGE
-      );
-      gl.texParameteri(
-        gl.TEXTURE_2D,
-        gl.TEXTURE_WRAP_T,
-        gl.CLAMP_TO_EDGE
-      );
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     }
     // 解除纹理绑定
     gl.bindTexture(gl.TEXTURE_2D, null);
@@ -622,10 +585,7 @@ export class glUtil {
    * @param gl
    * @param type
    */
-  static enable(
-    gl: WebGLRenderingContext,
-    type = gl.STENCIL_TEST
-  ) {
+  static enable(gl: WebGLRenderingContext, type = gl.STENCIL_TEST) {
     gl.enable(type);
   }
   /**
@@ -650,6 +610,34 @@ export class glUtil {
     gl.colorMask(true, true, true, true);
   }
   /**
+   * 创建深度缓冲区
+   * @param gl
+   * @param w
+   * @param h
+   * @returns
+   */
+  static creatDepthFramebuufer(
+    gl: WebGLRenderingContext,
+    framebuffer: WebGLFramebuffer,
+    w: number = 128,
+    h: number = 128
+  ) {
+    const depthBuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+    // const depthFramebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.framebufferRenderbuffer(
+      gl.FRAMEBUFFER,
+      gl.DEPTH_ATTACHMENT,
+      gl.RENDERBUFFER,
+      depthBuffer
+    );
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return depthBuffer;
+  }
+
+  /**
    * 创建渲染缓冲区
    * @param gl
    * @param w
@@ -666,8 +654,15 @@ export class glUtil {
       console.error("create framebuffer fail");
       return;
     }
+    const ext = gl.getExtension("EXT_color_buffer_float");
+    gl.getExtension("EXT_float_blend");
+    if (!ext) {
+      // console.error("EXT_color_buffer_float not supported");
+    }
+
     if (!texture) return framebuffer;
     framebuffer.texture = texture;
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
@@ -676,25 +671,24 @@ export class glUtil {
       texture,
       0
     );
-    const stencilBuffer = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, stencilBuffer);
-    gl.renderbufferStorage(
-      gl.RENDERBUFFER,
-      gl.STENCIL_INDEX8,
-      w,
-      h
-    );
-    gl.framebufferRenderbuffer(
-      gl.FRAMEBUFFER,
-      gl.STENCIL_ATTACHMENT,
-      gl.RENDERBUFFER,
-      stencilBuffer
-    );
-    const status = gl.checkFramebufferStatus(
-      gl.FRAMEBUFFER
-    );
+    // const stencilBuffer = gl.createRenderbuffer();
+    // gl.bindRenderbuffer(gl.RENDERBUFFER, stencilBuffer);
+    // gl.renderbufferStorage(
+    //   gl.RENDERBUFFER,
+    //   gl.STENCIL_INDEX8,
+    //   w,
+    //   h
+    // );
+    // gl.framebufferRenderbuffer(
+    //   gl.FRAMEBUFFER,
+    //   gl.STENCIL_ATTACHMENT,
+    //   gl.RENDERBUFFER,
+    //   stencilBuffer
+    // );
+    const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
     if (status !== gl.FRAMEBUFFER_COMPLETE) {
-      console.error("Framebuffer is incomplete:", status);
+      console.log("Framebuffer is incomplete:", status);
+      if (framebuffer) gl.deleteFramebuffer(framebuffer);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return framebuffer;
